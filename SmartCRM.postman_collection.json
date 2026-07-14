@@ -1,0 +1,363 @@
+{
+  "info": {
+    "name": "SmartCRM API",
+    "_postman_id": "smartcrm-api-collection",
+    "description": "Full API test collection for SmartCRM. Set {{base_url}} to http://localhost:8000/api and {{token}} after login.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000/api/v1" },
+    { "key": "token",    "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/auth/register",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"New Admin\",\n  \"email\": \"newadmin@example.com\",\n  \"password\": \"password\",\n  \"tenant_name\": \"Example Corp\",\n  \"tenant_slug\": \"example-corp\"\n}" }
+          }
+        },
+        {
+          "name": "Login (Admin)",
+          "event": [{ "listen": "test", "script": { "exec": ["const r = pm.response.json();", "if (r.data && r.data.token) pm.collectionVariables.set('token', r.data.token);"], "type": "text/javascript" } }],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@demo.test\",\n  \"password\": \"password\",\n  \"device_name\": \"postman\"\n}" }
+          }
+        },
+        {
+          "name": "Login (Sales Agent)",
+          "event": [{ "listen": "test", "script": { "exec": ["const r = pm.response.json();", "if (r.data && r.data.token) pm.collectionVariables.set('token', r.data.token);"], "type": "text/javascript" } }],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"agent1@demo.test\",\n  \"password\": \"password\",\n  \"device_name\": \"postman\"\n}" }
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/auth/me",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/auth/logout",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users & Roles",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/users?per_page=10", "query": [{ "key": "per_page", "value": "10" }, { "key": "role", "value": "sales_agent", "disabled": true }] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "Get Roles",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/users/roles",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/users",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"New Agent\",\n  \"email\": \"newagent@demo.test\",\n  \"password\": \"password\",\n  \"role\": \"sales_agent\",\n  \"phone\": \"+1-555-999-0001\"\n}" }
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "url": "{{base_url}}/users/3",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"role\": \"sales_manager\",\n  \"status\": \"active\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contacts",
+      "item": [
+        {
+          "name": "List Contacts",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/contacts?per_page=10", "query": [{ "key": "per_page", "value": "10" }, { "key": "search", "value": "Alice", "disabled": true }, { "key": "type", "value": "business", "disabled": true }, { "key": "status", "value": "active", "disabled": true }] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "Get Contact",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/contacts/1",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "Create Contact",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/contacts",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"first_name\": \"Test\",\n  \"last_name\": \"Contact\",\n  \"email\": \"test.contact@example.com\",\n  \"phone\": \"+1-555-777-0001\",\n  \"company\": \"Test Company\",\n  \"type\": \"business\",\n  \"status\": \"active\",\n  \"source\": \"website\"\n}" }
+          }
+        },
+        {
+          "name": "Contact Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/contacts/stats",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "Add Contact Note",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/contacts/1/notes",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"content\": \"Discussed pricing and onboarding timeline.\",\n  \"type\": \"call\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Leads",
+      "item": [
+        {
+          "name": "List Leads",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/leads?per_page=10", "query": [{ "key": "per_page", "value": "10" }, { "key": "status", "value": "new", "disabled": true }, { "key": "priority", "value": "high", "disabled": true }] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "Lead Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/leads/stats",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "Create Lead",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/leads",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"first_name\": \"Test\",\n  \"last_name\": \"Lead\",\n  \"email\": \"test.lead@example.com\",\n  \"phone\": \"+1-555-888-0001\",\n  \"company\": \"Lead Company\",\n  \"source\": \"website\",\n  \"status\": \"new\",\n  \"priority\": \"medium\",\n  \"score\": 50\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pipeline & Deals",
+      "item": [
+        {
+          "name": "List Pipelines",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/pipelines",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "Deals Kanban",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/deals/kanban",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "List Deals",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/deals",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "Deal Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/deals/stats",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "Move Deal to Stage",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/deals/1/move",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"stage_id\": 3\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tasks",
+      "item": [
+        {
+          "name": "List Tasks",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/tasks",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "Upcoming Tasks",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/tasks/upcoming",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "Overdue Tasks",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/tasks/overdue",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "Task Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/tasks/stats",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "Complete Task",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/tasks/1/complete",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Calls & AI Agent",
+      "item": [
+        {
+          "name": "List Calls",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/calls?per_page=10", "query": [{ "key": "per_page", "value": "10" }, { "key": "status", "value": "completed", "disabled": true }, { "key": "direction", "value": "outbound", "disabled": true }, { "key": "date_from", "value": "2026-01-01", "disabled": true }] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "Get Call Detail",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/calls/1",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "Initiate Call",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/calls",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"phone_number\": \"+1-555-100-0001\",\n  \"contact_id\": 1,\n  \"direction\": \"outbound\"\n}" }
+          }
+        },
+        {
+          "name": "Update Call (webhook / complete)",
+          "request": {
+            "method": "PUT",
+            "url": "{{base_url}}/calls/1",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"completed\",\n  \"duration\": 185,\n  \"transcript\": \"Agent: Hi, this is John calling about your inquiry.\\nCustomer: Yes, I was interested in your enterprise plan.\\nAgent: Great! Let me walk you through the features.\\nCustomer: That sounds perfect for our needs.\\nAgent: I'll send over the proposal today.\",\n  \"ended_at\": \"2026-06-19T14:30:00Z\"\n}" }
+          }
+        },
+        {
+          "name": "Generate AI Summary",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/calls/1/summary",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "Call Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/calls/stats",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "Call Report (with AI Narrative)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/calls/report?date_from=2026-06-01&date_to=2026-06-30", "query": [{ "key": "date_from", "value": "2026-06-01" }, { "key": "date_to", "value": "2026-06-30" }, { "key": "user_id", "value": "3", "disabled": true }] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "Contact Call History",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/calls/contact/1",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Overview",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/dashboard/overview",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "Revenue Chart",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/dashboard/revenue-chart",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Accept", "value": "application/json" }]
+          }
+        }
+      ]
+    }
+  ]
+}
