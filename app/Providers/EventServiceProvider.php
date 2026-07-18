@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Application\Lead\Listeners\LogLeadActivity;
 use App\Application\Pipeline\Listeners\LogDealActivity;
 use App\Application\Task\Listeners\NotifyTaskAssignee;
+use App\Application\WhatsApp\Listeners\NotifyWhatsAppMessage;
 use App\Domain\Lead\Events\LeadAssigned;
 use App\Domain\Lead\Events\LeadCreated;
 use App\Domain\Lead\Events\LeadStatusChanged;
@@ -52,6 +53,11 @@ class EventServiceProvider extends ServiceProvider
         ],
         TaskCompleted::class => [
             [NotifyTaskAssignee::class, 'handleTaskCompleted'],
+        ],
+
+        // WhatsApp events
+        WhatsAppMessageReceived::class => [
+            NotifyWhatsAppMessage::class,
         ],
     ];
 }
