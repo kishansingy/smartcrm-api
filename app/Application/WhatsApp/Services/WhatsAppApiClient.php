@@ -10,12 +10,14 @@ class WhatsAppApiClient
     private string $apiUrl;
     private string $token;
     private string $phoneId;
+    private string $wabaId;
 
     public function __construct()
     {
-        $this->apiUrl  = rtrim(config('services.whatsapp.api_url', 'https://graph.facebook.com/v19.0'), '/');
+        $this->apiUrl  = rtrim(config('services.whatsapp.api_url', 'https://graph.facebook.com/v25.0'), '/');
         $this->token   = config('services.whatsapp.token', '');
         $this->phoneId = config('services.whatsapp.phone_id', '');
+        $this->wabaId  = config('services.whatsapp.waba_id', '');
     }
 
     public function sendText(string $to, string $text): array
@@ -73,11 +75,19 @@ class WhatsAppApiClient
 
     public function getTemplates(): array
     {
+        // Templates are scoped to the WABA, not the phone number ID
+        $id = $this->wabaId ?: $this->phoneId;
+
         $response = Http::withToken($this->token)
-            ->get("{$this->apiUrl}/{$this->phoneId}/message_templates");
+            ->get("{$this->apiUrl}/{$id}/message_templates", [
+                'limit' => 100,
+            ]);
 
         if ($response->failed()) {
-            Log::error('WhatsApp get templates failed', ['response' => $response->json()]);
+            Log::error('WhatsApp get templates failed', [
+                'id'       => $id,
+                'response' => $response->json(),
+            ]);
             return [];
         }
 

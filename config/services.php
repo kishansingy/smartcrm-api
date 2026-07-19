@@ -36,10 +36,11 @@ return [
     ],
 
     'whatsapp' => [
-        'api_url'      => env('WHATSAPP_API_URL', 'https://graph.facebook.com/v19.0'),
+        'api_url'      => env('WHATSAPP_API_URL', 'https://graph.facebook.com/v25.0'),
         'token'        => env('WHATSAPP_API_TOKEN'),
         'phone_id'     => env('WHATSAPP_PHONE_ID'),
-        'verify_token' => env('WHATSAPP_VERIFY_TOKEN', 'smartcrm_verify'),
+        'waba_id'      => env('WHATSAPP_WABA_ID'),
+        'verify_token' => env('WHATSAPP_VERIFY_TOKEN', 'smartcrm_whatsapp_2026'),
     ],
 
     'openai' => [
