@@ -94,7 +94,7 @@ class DashboardRepository implements DashboardRepositoryInterface
 
     private function getContactStats(int $tenantId): array
     {
-        return DB::table('contacts')
+        $result = DB::table('contacts')
             ->where('tenant_id', $tenantId)
             ->whereNull('deleted_at')
             ->selectRaw('
@@ -102,8 +102,9 @@ class DashboardRepository implements DashboardRepositoryInterface
                 SUM(CASE WHEN status = "active" THEN 1 ELSE 0 END) as active,
                 SUM(CASE WHEN MONTH(created_at) = ? AND YEAR(created_at) = ? THEN 1 ELSE 0 END) as this_month
             ', [now()->month, now()->year])
-            ->first()
-            ->toArray() ?? [];
+            ->first();
+
+        return $result ? (array) $result : ['total' => 0, 'active' => 0, 'this_month' => 0];
     }
 
     public function getRevenueChart(int $tenantId, string $period = 'monthly'): array

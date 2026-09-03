@@ -85,7 +85,11 @@ class WhatsAppController extends Controller
             $request->input('template_components', [])
         );
 
-        return ApiResponse::success($result, "Broadcast queued for {$result['queued']} recipients.");
+        $message = $result['queued'] > 0
+            ? "Sent to {$result['queued']} recipients" . ($result['failed'] > 0 ? ", {$result['failed']} failed." : '.')
+            : "All {$result['failed']} sends failed.";
+
+        return ApiResponse::success($result, $message);
     }
 
     public function messageLog(Request $request): JsonResponse

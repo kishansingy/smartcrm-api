@@ -46,6 +46,14 @@ class WhatsAppApiClient
             $payload['template']['components'] = $components;
         }
 
+        Log::info('WhatsApp sendTemplate called', [
+            'to'         => $to,
+            'name'       => $name,
+            'language'   => $language,
+            'components' => $components,
+            'payload'    => $payload,
+        ]);
+
         return $this->send($payload);
     }
 

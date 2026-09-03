@@ -187,6 +187,15 @@ class WhatsAppService
         $user     = Auth::user();
         $queued   = 0;
         $failed   = 0;
+        $errors   = [];
+
+        // Debug log to verify components are being received
+        Log::info('Broadcast started', [
+            'template'   => $templateName,
+            'language'   => $language,
+            'components' => $components,
+            'recipients' => count($phones),
+        ]);
 
         foreach ($phones as $phone) {
             try {
@@ -200,12 +209,22 @@ class WhatsAppService
                 $this->sendMessage($dto);
                 $queued++;
             } catch (\Throwable $e) {
-                Log::warning("Broadcast failed for {$phone}: " . $e->getMessage());
+                Log::error("Broadcast failed for {$phone}", [
+                    'template'   => $templateName,
+                    'components' => $components,
+                    'error'      => $e->getMessage(),
+                ]);
                 $failed++;
+                $errors[] = $e->getMessage();
             }
         }
 
-        return ['queued' => $queued, 'failed' => $failed, 'total' => count($phones)];
+        return [
+            'queued' => $queued,
+            'failed' => $failed,
+            'total'  => count($phones),
+            'errors' => array_unique($errors),
+        ];
     }
 
     public function messageLog(array $filters = []): \Illuminate\Contracts\Pagination\LengthAwarePaginator
