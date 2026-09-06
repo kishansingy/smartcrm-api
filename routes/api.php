@@ -108,6 +108,7 @@ Route::prefix('v1')->group(function () {
 
         // WhatsApp
         Route::prefix('whatsapp')->name('whatsapp.')->group(function () {
+            Route::post('upload-media',                                    [WhatsAppController::class, 'uploadMedia'])->name('upload-media');
             Route::get('conversations',                                    [WhatsAppController::class, 'conversations'])->name('conversations');
             Route::get('conversations/{conversation}/messages',            [WhatsAppController::class, 'messages'])->name('messages');
             Route::post('conversations/{conversation}/mark-read',          [WhatsAppController::class, 'markRead'])->name('mark-read');

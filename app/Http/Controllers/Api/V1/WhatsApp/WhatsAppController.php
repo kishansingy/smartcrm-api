@@ -64,30 +64,62 @@ class WhatsAppController extends Controller
         return ApiResponse::success($this->whatsAppService->stats());
     }
 
+    public function uploadMedia(Request $request): JsonResponse
+    {
+        $this->authorize('whatsapp.send');
+
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:jpeg,jpg,png,gif,webp,mp4,pdf,doc,docx', 'max:16384'],
+        ]);
+
+        try {
+            $result = $this->whatsAppService->uploadMedia($request->file('file'));
+            return ApiResponse::success(['media_id' => $result['id']], 'Media uploaded.');
+        } catch (\Throwable $e) {
+            return ApiResponse::error($e->getMessage(), 422);
+        }
+    }
+
+
     public function broadcast(Request $request): JsonResponse
     {
         $this->authorize('whatsapp.send');
 
         $request->validate([
-            'phones'               => ['required', 'array', 'min:1'],
-            'phones.*'             => ['required', 'string'],
+            'phones'               => ['nullable', 'array'],
+            'phones.*'             => ['nullable', 'string'],
+            'recipients'           => ['nullable', 'array'],
+            'recipients.*.phone'   => ['required_with:recipients', 'string'],
+            'recipients.*.body_params' => ['nullable', 'array'],
             'template_name'        => ['required', 'string'],
             'template_language'    => ['nullable', 'string'],
             'template_components'  => ['nullable', 'array'],
             'scheduled_at'         => ['nullable', 'date'],
         ]);
 
-        $result = $this->whatsAppService->broadcast(
-            $request->input('phones'),
+        // Ensure at least one recipient source is provided
+        if (empty($request->input('phones', [])) && empty($request->input('recipients', []))) {
+            return ApiResponse::error('No recipients provided. Please select contacts or enter phone numbers.', 422);
+        }
+
+        // Support both plain phones[] and recipients[] with per-recipient body_params
+        $phones     = $request->input('phones', []);
+        $recipients = $request->input('recipients', []);
+
+        // Normalise to recipients array
+        if (empty($recipients) && !empty($phones)) {
+            $recipients = array_map(fn($p) => ['phone' => $p, 'body_params' => []], $phones);
+        }
+
+        $result = $this->whatsAppService->broadcastQueued(
+            $recipients,
             $request->input('template_name'),
             $request->input('template_language', 'en'),
-            $request->input('scheduled_at'),
-            $request->input('template_components', [])
+            $request->input('template_components', []),
         );
 
-        $message = $result['queued'] > 0
-            ? "Sent to {$result['queued']} recipients" . ($result['failed'] > 0 ? ", {$result['failed']} failed." : '.')
-            : "All {$result['failed']} sends failed.";
+        $total   = $result['total'];
+        $message = "Queued broadcast to {$total} recipient" . ($total !== 1 ? 's' : '') . ". Messages will be delivered shortly.";
 
         return ApiResponse::success($result, $message);
     }

@@ -72,6 +72,29 @@ class WhatsAppApiClient
         ]);
     }
 
+    public function uploadMediaFile(string $path, string $mimeType, string $filename): array
+    {
+        if (empty($this->token) || empty($this->phoneId)) {
+            throw new \RuntimeException('WhatsApp API not configured');
+        }
+
+        $response = Http::withToken($this->token)
+            ->attach('file', fopen($path, 'r'), $filename, ['Content-Type' => $mimeType])
+            ->post("{$this->apiUrl}/{$this->phoneId}/media", [
+                'messaging_product' => 'whatsapp',
+                'type'              => $mimeType,
+            ]);
+
+        if ($response->failed()) {
+            Log::error('WhatsApp media upload failed', [
+                'response' => $response->json(),
+            ]);
+            throw new \RuntimeException('Media upload failed: ' . ($response->json('error.message') ?? 'Unknown error'));
+        }
+
+        return $response->json();
+    }
+
     public function markRead(string $messageId): array
     {
         return $this->send([
@@ -83,12 +106,11 @@ class WhatsAppApiClient
 
     public function getTemplates(): array
     {
-        // Templates are scoped to the WABA, not the phone number ID
         $id = $this->wabaId ?: $this->phoneId;
 
         $response = Http::withToken($this->token)
             ->get("{$this->apiUrl}/{$id}/message_templates", [
-                'limit' => 100,
+                'limit' => 250,
             ]);
 
         if ($response->failed()) {

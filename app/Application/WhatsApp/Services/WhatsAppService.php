@@ -3,13 +3,16 @@
 namespace App\Application\WhatsApp\Services;
 
 use App\Application\WhatsApp\DTOs\SendMessageDTO;
+use App\Application\WhatsApp\Jobs\SendWhatsAppBroadcast;
 use App\Domain\WhatsApp\Contracts\WhatsAppRepositoryInterface;
 use App\Domain\WhatsApp\Events\WhatsAppMessageReceived;
 use App\Domain\WhatsApp\Events\WhatsAppMessageSent;
 use App\Domain\WhatsApp\Models\WhatsAppConversation;
 use App\Domain\WhatsApp\Models\WhatsAppMessage;
+use Illuminate\Bus\Batch;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Log;
 
 class WhatsAppService
@@ -156,6 +159,19 @@ class WhatsAppService
         }
 
         $this->waRepository->updateMessageStatus($status['id'], $status['status'], $timestamps);
+
+        // Broadcast status change so the UI ticks update in real-time
+        $message = \App\Domain\WhatsApp\Models\WhatsAppMessage::with('conversation')
+            ->where('wa_message_id', $status['id'])
+            ->first();
+
+        if ($message) {
+            event(new \App\Domain\WhatsApp\Events\WhatsAppMessageStatusUpdated(
+                $message->conversation->tenant_id,
+                $status['id'],
+                $status['status'],
+            ));
+        }
     }
 
     public function markRead(WhatsAppConversation $conversation): void
@@ -180,6 +196,51 @@ class WhatsAppService
     public function stats(): array
     {
         return $this->waRepository->getStats(Auth::user()->tenant_id);
+    }
+
+    /**
+     * Dispatch all recipients as individual queue jobs — unlimited scale,
+     * chunked into batches of 50 so the queue worker processes them steadily.
+     *
+     * @param  array  $recipients  [['phone' => '+91...', 'body_params' => []], ...]
+     */
+    public function broadcastQueued(
+        array  $recipients,
+        string $templateName,
+        string $language       = 'en',
+        array  $components     = [],
+    ): array {
+        $user   = Auth::user();
+        $chunks = array_chunk($recipients, 50);
+        $total  = count($recipients);
+
+        Log::info('Broadcast queued', [
+            'template'   => $templateName,
+            'recipients' => $total,
+            'batches'    => count($chunks),
+        ]);
+
+        foreach ($chunks as $chunk) {
+            $jobs = array_map(fn($r) => new SendWhatsAppBroadcast(
+                recipient:    $r,
+                templateName: $templateName,
+                language:     $language,
+                components:   $components,
+                tenantId:     $user->tenant_id,
+                userId:       $user->id,
+            ), $chunk);
+
+            Bus::batch($jobs)
+                ->name("WhatsApp Broadcast: {$templateName}")
+                ->allowFailures()
+                ->dispatch();
+        }
+
+        return [
+            'total'   => $total,
+            'batches' => count($chunks),
+            'queued'  => true,
+        ];
     }
 
     public function broadcast(array $phones, string $templateName, string $language = 'en', ?string $scheduledAt = null, array $components = []): array
@@ -225,6 +286,15 @@ class WhatsAppService
             'total'  => count($phones),
             'errors' => array_unique($errors),
         ];
+    }
+
+    public function uploadMedia(\Illuminate\Http\UploadedFile $file): array
+    {
+        return $this->apiClient->uploadMediaFile(
+            $file->getPathname(),
+            $file->getMimeType(),
+            $file->getClientOriginalName()
+        );
     }
 
     public function messageLog(array $filters = []): \Illuminate\Contracts\Pagination\LengthAwarePaginator
