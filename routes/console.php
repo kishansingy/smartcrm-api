@@ -11,3 +11,9 @@ Artisan::command('inspire', function () {
 
 // Run task reminder check every 5 minutes
 Schedule::job(new SendTaskReminders)->everyFiveMinutes();
+
+// Fallback: process queued jobs every 3 minutes (use only if Supervisor is not available)
+Schedule::command('queue:work --stop-when-empty --tries=3 --backoff=10')
+    ->everyThreeMinutes()
+    ->withoutOverlapping()
+    ->runInBackground();

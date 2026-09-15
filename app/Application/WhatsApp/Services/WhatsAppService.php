@@ -92,6 +92,8 @@ class WhatsAppService
         $changes = $entry['changes'][0]['value'] ?? null;
         if (! $changes) return;
 
+        $phoneNumberId = $changes['metadata']['phone_number_id'] ?? null;
+
         // Handle status updates (delivered, read)
         foreach ($changes['statuses'] ?? [] as $status) {
             $this->handleStatusUpdate($status);
@@ -99,18 +101,35 @@ class WhatsAppService
 
         // Handle incoming messages
         foreach ($changes['messages'] ?? [] as $message) {
-            $this->handleIncomingMessage($message, $changes['contacts'][0] ?? []);
+            $this->handleIncomingMessage($message, $changes['contacts'][0] ?? [], $phoneNumberId);
         }
     }
 
-    private function handleIncomingMessage(array $message, array $contact): void
+    private function handleIncomingMessage(array $message, array $contact, ?string $phoneNumberId = null): void
     {
         $phone    = $message['from'];
         $name     = $contact['profile']['name'] ?? $phone;
 
-        // Find tenant by phone number ID — using first tenant for now
-        // In production, map phone_number_id to tenant
+        // Resolve tenant from configured phone_number_id
+        // In a single-tenant setup the env WHATSAPP_PHONE_ID identifies the tenant.
+        // Find the first user whose tenant owns this phone ID; fall back to tenant 1.
+        $configuredPhoneId = config('services.whatsapp.phone_id');
         $tenantId = 1;
+
+        if ($phoneNumberId && $phoneNumberId !== $configuredPhoneId) {
+            // Payload is for a different phone number — ignore
+            Log::info('WhatsApp webhook ignored: unknown phone_number_id', [
+                'phone_number_id' => $phoneNumberId,
+                'configured'      => $configuredPhoneId,
+            ]);
+            return;
+        }
+
+        // Resolve tenant: first user with a valid tenant
+        $user = \App\Models\User::whereNotNull('tenant_id')->orderBy('tenant_id')->first();
+        if ($user) {
+            $tenantId = $user->tenant_id;
+        }
 
         $conversation = $this->waRepository->findConversationByPhone($tenantId, $phone)
             ?? $this->waRepository->createConversation([
