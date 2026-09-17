@@ -18,7 +18,7 @@ class WhatsAppMessageNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['broadcast', 'database'];
+        return ['broadcast'];
     }
 
     /**

@@ -69,7 +69,8 @@ class WhatsAppService
             'type'            => $dto->type,
             'content'         => $dto->text,
             'template_name'   => $dto->templateName,
-            'status'          => 'sent',
+            'status'          => $waMessageId ? 'sent' : 'failed',
+            'error_message'   => $waMessageId ? null : ($response['error']['message'] ?? 'No message ID returned'),
             'sent_at'         => now(),
         ]);
 
@@ -296,6 +297,29 @@ class WhatsAppService
                 ]);
                 $failed++;
                 $errors[] = $e->getMessage();
+
+                // Save failed message record with error reason
+                try {
+                    $conversation = $this->waRepository->findConversationByPhone($user->tenant_id, $phone)
+                        ?? $this->waRepository->createConversation([
+                            'tenant_id'    => $user->tenant_id,
+                            'assigned_to'  => $user->id,
+                            'phone_number' => $phone,
+                            'status'       => 'active',
+                        ]);
+                    $this->waRepository->createMessage([
+                        'conversation_id' => $conversation->id,
+                        'user_id'         => $user->id,
+                        'direction'       => 'outbound',
+                        'type'            => 'template',
+                        'template_name'   => $templateName,
+                        'status'          => 'failed',
+                        'error_message'   => $e->getMessage(),
+                        'sent_at'         => now(),
+                    ]);
+                } catch (\Throwable $inner) {
+                    Log::warning('Could not save failed message record: ' . $inner->getMessage());
+                }
             }
         }
 

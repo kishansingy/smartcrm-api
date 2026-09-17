@@ -30,7 +30,12 @@ class NotifyWhatsAppMessage implements ShouldQueue
 
         if ($assignedUserId) {
             $user = User::find($assignedUserId);
-            $user?->notify(new \App\Application\WhatsApp\Notifications\WhatsAppMessageNotification($message));
+            try {
+                $user?->notify(new \App\Application\WhatsApp\Notifications\WhatsAppMessageNotification($message));
+            } catch (\Throwable $e) {
+                // Never let notification failure affect message processing
+                Log::warning('WhatsApp notification failed (non-critical): ' . $e->getMessage());
+            }
         }
     }
 }
